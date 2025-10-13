@@ -533,17 +533,18 @@ this.spineLength = 0.65305 ;
     // Spine, chest, neck, head (neutral)
     const spineMatrix = this.spineMatrix;
     const chestMatrix = matMul(spineMatrix, this.chestMatrix);
-    const neckMatrix = matMul(chestMatrix, this.neckMatrix);    
+    const neckMatrix = matMul(chestMatrix, this.neckMatrix);
     const headMatrix = matMul(neckMatrix, this.headMatrix);
 
-
     // Right arm (raised)
-    let armRightTransformation = matMul(this.armRightMatrix, rotZ(this.armRightRotation.z));
+    let armRightTransformation = matMul(this.armRightMatrix,rotZ(this.armRightRotation.z));
+    // armRightTransformation = matMul(translation(0,2,0), armRightTransformation);
     armRightTransformation = matMul(chestMatrix, armRightTransformation);
 
-    let forearmRightTransformation = matMul(armRightTransformation, translation(0, this.armLength/2, 0));
-    forearmRightTransformation = matMul(forearmRightTransformation, rotX(pi/4));
-    forearmRightTransformation = matMul(forearmRightTransformation, this.forearmRightMatrix);
+    let forearmRightTransformation = matMul(this.forearmRightMatrix, rotZ(pi/2));
+    forearmRightTransformation = matMul(forearmRightTransformation, rotX(pi/6));
+    forearmRightTransformation = matMul(forearmRightTransformation, translation(this.armLength/2, this.armLength/2, 0));
+    forearmRightTransformation = matMul(armRightTransformation, forearmRightTransformation);
 
     let handRightTransformation = matMul(forearmRightTransformation, this.handRightMatrix);
 
