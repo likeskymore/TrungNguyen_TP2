@@ -185,9 +185,9 @@ let container, stats, clock, controls;
 let lights, camera, scene, renderer, human, humanGeometry, humanMaterial, humanMesh, robot;
 let skinWeight, skinIndices, boneArray, realBones, boneDict, centerOfMass;
 
+
 THREE.Object3D.prototype.setMatrix = function (m) {
-    this.matrixAutoUpdate = false;
-    this.matrix.copy(m);
+    this.matrix=m;
     this.matrix.decompose(this.position, this.quaternion, this.scale);
 };
 
@@ -350,98 +350,137 @@ this.spineLength = 0.65305 ;
                 0, 0, 0, 1);
         var headMatrix = matMul(neckMatrix, this.headMatrix);
 
-        // Leg, shin, foot, arm, forearm, hand matrix
-        this.legLeftMatrix = new THREE.Matrix4().set(
-                1, 0, 0, this.legLeftTranslation.x,
-                0, 1, 0, this.legLeftTranslation.y - this.spineLength,
-                0, 0, 1, this.legLeftTranslation.z,
-                0, 0, 0, 1);
-        var rotatedLeftLeg = matMul(this.legLeftMatrix,rotZ(this.legLeftRotation.z));
-        var legLeftMatrix = matMul(this.spineMatrix, rotatedLeftLeg);
-
-        this.legRightMatrix = new THREE.Matrix4().set(
-                1, 0, 0, this.legRightTranslation.x,
-                0, 1, 0, this.legRightTranslation.y - this.spineLength,
-                0, 0, 1, this.legRightTranslation.z,
-                0, 0, 0, 1);
-        var rotatedRightLeg = matMul(this.legRightMatrix,rotZ(this.legRightRotation.z));
-        var legRightMatrix = matMul(this.spineMatrix, rotatedRightLeg);
-
-        this.shinLeftMatrix = new THREE.Matrix4().set(
-                1, 0, 0, this.shinLeftTranslation.x,
-                0, 1, 0, this.shinLeftTranslation.y,
-                0, 0, 1, this.shinLeftTranslation.z,
-                0, 0, 0, 1);
-        var rotatedLeftShin = matMul(this.shinLeftMatrix,rotZ(this.shinLeftRotation.z));
-        var shinLeftMatrix = matMul(legLeftMatrix, rotatedLeftShin);
-
-        this.shinRightMatrix = new THREE.Matrix4().set(
-                1, 0, 0, this.shinRightTranslation.x,
-                0, 1, 0, this.shinRightTranslation.y,
-                0, 0, 1, this.shinRightTranslation.z,
-                0, 0, 0, 1);
-        var rotatedRightShin = matMul(this.shinRightMatrix,rotZ(this.shinRightRotation.z));
-        var shinRightMatrix = matMul(legRightMatrix, rotatedRightShin);
-
-        this.footLeftMatrix = new THREE.Matrix4().set(
-                1, 0, 0, 0,
-                0, 1, 0, 0.5*this.shinLength,
-                0, 0, 1, 0,
-                0, 0, 0, 1);    
-        var footLeftMatrix = matMul(shinLeftMatrix, this.footLeftMatrix);
-
-        this.footRightMatrix = new THREE.Matrix4().set(
-                1, 0, 0, 0,
-                0, 1, 0, 0.5*this.shinLength,
-                0, 0, 1, 0,
-                0, 0, 0, 1);
-        var footRightMatrix = matMul(shinRightMatrix, this.footRightMatrix);
-
+        // Left Arm Matrix
         this.armLeftMatrix = new THREE.Matrix4().set(
-                1, 0, 0, this.armLeftTranslation.x + this.bodyWidth,
-                0, 1, 0, this.armLeftTranslation.y - this.bodyWidth*1.5,
-                0, 0, 1, this.armLeftTranslation.z + this.bodyWidth/2,
-                0, 0, 0, 1);
-        var rotatedLeftArm = matMul(this.armLeftMatrix,rotZ(this.armLeftRotation.z));
-        var armLeftMatrix = matMul(chestMatrix, rotatedLeftArm);
+            1, 0, 0, this.armLeftTranslation.x,
+            0, 1, 0, this.armLeftTranslation.y-this.chestLength/2, // augmente d'un demi chest
+            0, 0, 1, this.armLeftTranslation.z,
+            0, 0, 0, 1); 
+        this.armLeftMatrix = matMul( this.armLeftMatrix, rotZ(this.armLeftRotation.z) );
+        this.armLeftMatrix = matMul( this.armLeftMatrix, rotY(this.armLeftRotation.y) );
+        this.armLeftMatrix = matMul( this.armLeftMatrix, rotX(this.armLeftRotation.x) );
+        this.armLeftMatrix = matMul( this.armLeftMatrix, translation(0, this.armLength/2 , 0) );
+        var armLeftMatrix = new THREE.Matrix4().multiplyMatrices(chestMatrix, this.armLeftMatrix);
 
-        this.armRightMatrix = new THREE.Matrix4().set(
-                1, 0, 0, this.armRightTranslation.x - this.bodyWidth,
-                0, 1, 0, this.armRightTranslation.y - this.bodyWidth*1.5,
-                0, 0, 1, this.armRightTranslation.z + this.bodyWidth/2,
-                0, 0, 0, 1);
-        var rotatedRightArm = matMul(this.armRightMatrix,rotZ(this.armRightRotation.z));
-        var armRightMatrix = matMul(chestMatrix, rotatedRightArm);    
-
+        // Left Forearm Matrix 
         this.forearmLeftMatrix = new THREE.Matrix4().set(
-                1, 0, 0, this.forearmLeftTranslation.x,
-                0, 1, 0, this.forearmLeftTranslation.y,
-                0, 0, 1, this.forearmLeftTranslation.z,
-                0, 0, 0, 1);
-        var rotatedLeftForearm = matMul(this.forearmLeftMatrix,rotZ(this.forearmLeftRotation.z));
-        var forearmLeftMatrix = matMul(armLeftMatrix, rotatedLeftForearm);
+            1, 0, 0, this.forearmLeftTranslation.x,
+            0, 1, 0, this.forearmLeftTranslation.y-this.armLength/2+this.forearmLength/2,
+            0, 0, 1, this.forearmLeftTranslation.z,
+            0, 0, 0, 1);
+        this.forearmLeftMatrix = matMul( this.forearmLeftMatrix, translation(0,-this.forearmLength/2,0) );
+        this.forearmLeftMatrix = matMul( this.forearmLeftMatrix, rotZ(this.forearmLeftRotation.z) );
+        this.forearmLeftMatrix = matMul( this.forearmLeftMatrix, rotY(this.forearmLeftRotation.y) );
+        this.forearmLeftMatrix = matMul( this.forearmLeftMatrix, rotX(this.forearmLeftRotation.x) );    
+        this.forearmLeftMatrix = matMul( this.forearmLeftMatrix, translation(0, this.forearmLength/2,0) ); 
+        var forearmLeftMatrix = new THREE.Matrix4().multiplyMatrices(armLeftMatrix, this.forearmLeftMatrix);
 
-        this.forearmRightMatrix = new THREE.Matrix4().set(
-                1, 0, 0, this.forearmRightTranslation.x,
-                0, 1, 0, this.forearmRightTranslation.y,
-                0, 0, 1, this.forearmRightTranslation.z,
-                0, 0, 0, 1);
-        var rotatedRightForearm = matMul(this.forearmRightMatrix,rotZ(this.forearmRightRotation.z));
-        var forearmRightMatrix = matMul(armRightMatrix, rotatedRightForearm);
-
+        // Left Hand Matrix
         this.handLeftMatrix = new THREE.Matrix4().set(
-                1, 0, 0, 0,
-                0, 1, 0, this.forearmLength/2 + 0.1,
-                0, 0, 1, 0,
-                0, 0, 0, 1);
-        var handLeftMatrix = matMul(forearmLeftMatrix, this.handLeftMatrix);
+            1, 0, 0, this.forearmLeftTranslation.x,
+            0, 1, 0, this.forearmLength/2+this.handRadius,
+            0, 0, 1, 0,
+            0, 0, 0, 1);
+        var handLeftMatrix = new THREE.Matrix4().multiplyMatrices(forearmLeftMatrix, this.handLeftMatrix);
 
+        // Right Arm Matrix
+        this.armRightMatrix = new THREE.Matrix4().set(
+            1, 0, 0, this.armRightTranslation.x,
+            0, 1, 0, this.armRightTranslation.y-this.chestLength/2, 
+            0, 0, 1, this.armRightTranslation.z,
+            0, 0, 0, 1);
+        this.armRightMatrix = matMul( this.armRightMatrix, rotZ(this.armRightRotation.z) );
+        this.armRightMatrix = matMul( this.armRightMatrix, rotY(this.armRightRotation.y) );
+        this.armRightMatrix = matMul( this.armRightMatrix, rotX(this.armRightRotation.x) );
+        this.armRightMatrix = matMul( this.armRightMatrix, translation(0, this.armLength/2, 0) );
+        var armRightMatrix = new THREE.Matrix4().multiplyMatrices(chestMatrix, this.armRightMatrix);
+
+        // Right Forearm Matrix 
+        this.forearmRightMatrix = new THREE.Matrix4().set(
+            1, 0, 0, this.forearmRightTranslation.x,
+            0, 1, 0, this.forearmRightTranslation.y-this.armLength/2+this.forearmLength/2,
+            0, 0, 1, this.forearmRightTranslation.z,
+            0, 0, 0, 1);
+        this.forearmRightMatrix = matMul( this.forearmRightMatrix, translation(0,-this.forearmLength/2,0) );
+        this.forearmRightMatrix = matMul( this.forearmRightMatrix, rotZ(this.forearmRightRotation.z) );
+        this.forearmRightMatrix = matMul( this.forearmRightMatrix, rotY(this.forearmRightRotation.y) );
+        this.forearmRightMatrix = matMul( this.forearmRightMatrix, rotX(this.forearmRightRotation.x) );
+        this.forearmRightMatrix = matMul( this.forearmRightMatrix, translation(0,this.forearmLength/2,0) );
+        var forearmRightMatrix = new THREE.Matrix4().multiplyMatrices(armRightMatrix, this.forearmRightMatrix);
+
+        // Right Hand Matrix
         this.handRightMatrix = new THREE.Matrix4().set(
-                1, 0, 0, 0,
-                0, 1, 0, this.forearmLength/2 + 0.1,
-                0, 0, 1, 0,
-                0, 0, 0, 1);
-        var handRightMatrix = matMul(forearmRightMatrix, this.handRightMatrix);
+            1, 0, 0, this.forearmRightTranslation.x,
+            0, 1, 0, this.forearmLength/2+this.handRadius,
+            0, 0, 1, 0,
+            0, 0, 0, 1);
+        var handRightMatrix = new THREE.Matrix4().multiplyMatrices(forearmRightMatrix, this.handRightMatrix);
+
+        //Left Leg Matrix
+        this.legLeftMatrix = new THREE.Matrix4().set(
+            1, 0, 0, this.legLeftTranslation.x,
+            0, 1, 0, this.legLeftTranslation.y-this.spineLength/2,
+            0, 0, 1, this.legLeftTranslation.z,
+            0, 0, 0, 1);
+        this.legLeftMatrix=matMul(this.legLeftMatrix, rotX(this.legLeftRotation.x));
+        this.legLeftMatrix=matMul(this.legLeftMatrix, rotY(this.legLeftRotation.y));
+        this.legLeftMatrix=matMul(this.legLeftMatrix, rotZ(this.legLeftRotation.z));
+        this.legLeftMatrix=matMul(this.legLeftMatrix, translation(0,this.legLength/2,0));
+        var legLeftMatrix = new THREE.Matrix4().multiplyMatrices(this.spineMatrix, this.legLeftMatrix);
+
+        // Left Shin Matrix
+        this.shinLeftMatrix = new THREE.Matrix4().set(
+            1, 0, 0, this.shinLeftTranslation.x,
+            0, 1, 0, this.shinLeftTranslation.y-this.legLength/2+this.shinLength/2,
+            0, 0, 1, this.shinLeftTranslation.z,
+            0, 0, 0, 1);
+        this.shinLeftMatrix  = matMul( this.shinLeftMatrix, translation(0,-this.shinLength/2,0) );
+        this.shinLeftMatrix = matMul( this.shinLeftMatrix, rotZ(this.shinLeftRotation.z) );
+        this.shinLeftMatrix = matMul( this.shinLeftMatrix, rotY(this.shinLeftRotation.y) );
+        this.shinLeftMatrix = matMul( this.shinLeftMatrix, rotX(this.shinLeftRotation.x) );
+        this.shinLeftMatrix  = matMul( this.shinLeftMatrix, translation(0,this.shinLength/2,0) );
+        var shinLeftMatrix = new THREE.Matrix4().multiplyMatrices(legLeftMatrix, this.shinLeftMatrix);
+        
+        // Left Foot Matrix
+        this.footLeftMatrix = new THREE.Matrix4().set(
+            1, 0, 0, this.shinLeftTranslation.x,
+            0, 1, 0, this.shinLength/2,
+            0, 0, 1, this.footDepth/4,
+            0, 0, 0, 1);
+        var footLeftMatrix = new THREE.Matrix4().multiplyMatrices(shinLeftMatrix, this.footLeftMatrix);
+
+        //Right Leg Matrix
+        this.legRightMatrix = new THREE.Matrix4().set(
+            1, 0, 0, this.legRightTranslation.x,
+            0, 1, 0, this.legRightTranslation.y-this.spineLength/2,
+            0, 0, 1, this.legRightTranslation.z,
+            0, 0, 0, 1);
+        this.legRightMatrix=matMul(this.legRightMatrix, rotX(this.legRightRotation.x));
+        this.legRightMatrix=matMul(this.legRightMatrix, rotY(this.legRightRotation.y));
+        this.legRightMatrix=matMul(this.legRightMatrix, rotZ(this.legRightRotation.z));
+        this.legRightMatrix=matMul(this.legRightMatrix, translation(0,this.legLength/2,0));
+        var legRightMatrix = new THREE.Matrix4().multiplyMatrices(this.spineMatrix, this.legRightMatrix);
+        
+        // Right Shin Matrix
+        this.shinRightMatrix = new THREE.Matrix4().set(
+            1, 0, 0, this.shinRightTranslation.x,
+            0, 1, 0, this.shinRightTranslation.y-this.legLength/2+this.shinLength/2,
+            0, 0, 1, this.shinRightTranslation.z,
+            0, 0, 0, 1);
+            this.shinRightMatrix  = matMul( this.shinRightMatrix, translation(0,-this.shinLength/2,0) );
+            this.shinRightMatrix = matMul( this.shinRightMatrix, rotX(this.shinRightRotation.x) );     
+            this.shinRightMatrix = matMul( this.shinRightMatrix, rotY(this.shinRightRotation.y) );
+            this.shinRightMatrix = matMul( this.shinRightMatrix, rotZ(this.shinRightRotation.z) );
+            this.shinRightMatrix  = matMul( this.shinRightMatrix, translation(0,this.shinLength/2,0) );
+        var shinRightMatrix = new THREE.Matrix4().multiplyMatrices(legRightMatrix, this.shinRightMatrix);
+
+        // Right Foot Matrix
+        this.footRightMatrix = new THREE.Matrix4().set(
+            1, 0, 0, this.shinRightTranslation.x,
+            0, 1, 0, this.shinLength/2,
+            0, 0, 1, this.footDepth/4,
+            0, 0, 0, 1);
+        var footRightMatrix = new THREE.Matrix4().multiplyMatrices(shinRightMatrix, this.footRightMatrix);
 
         // Apply transformation
         this.spine.setMatrix(this.spineMatrix);
@@ -517,6 +556,18 @@ this.spineLength = 0.65305 ;
         this.chest.visible = false;
         this.neck.visible = false;
         this.head.visible = false;
+        this.legLeft.visible = false;
+        this.legRight.visible = false;
+        this.shinLeft.visible = false;
+        this.shinRight.visible = false;
+        this.footLeft.visible = false;
+        this.footRight.visible = false;
+        this.armLeft.visible = false;
+        this.armRight.visible = false;
+        this.forearmLeft.visible = false;
+        this.forearmRight.visible = false;
+        this.handLeft.visible = false;
+        this.handRight.visible = false;
     }
     hideHuman() {
         this.human.visible = false;
@@ -527,6 +578,18 @@ this.spineLength = 0.65305 ;
         this.chest.visible = true;
         this.neck.visible = true;
         this.head.visible = true;
+        this.legLeft.visible = true;
+        this.legRight.visible = true;
+        this.shinLeft.visible = true;
+        this.shinRight.visible = true;
+        this.footLeft.visible = true;
+        this.footRight.visible = true;
+        this.armLeft.visible = true;
+        this.armRight.visible = true;
+        this.forearmLeft.visible = true;
+        this.forearmRight.visible = true;
+        this.handLeft.visible = true;
+        this.handRight.visible = true;
 
     }
     showHuman() {
@@ -534,137 +597,155 @@ this.spineLength = 0.65305 ;
     }
 
 	pose1() {
-    // Spine, chest
-    const spineMatrix = this.spineMatrix;
-    const chestMatrix = matMul(spineMatrix, this.chestMatrix);
-    const neckMatrix = matMul(chestMatrix, this.neckMatrix);
-    const headMatrix = matMul(neckMatrix, this.headMatrix);
 
-    // Right arm (raised)
-    let armRightTransformation = matMul(this.armRightMatrix,rotZ(this.armRightRotation.z));
-    armRightTransformation = matMul(chestMatrix, armRightTransformation);
+        const spineMatrix = this.spineMatrix;
+        const chestMatrix = matMul(spineMatrix, this.chestMatrix);
+        const neckMatrix = matMul(chestMatrix, this.neckMatrix);
+        const headMatrix = matMul(neckMatrix, this.headMatrix);
 
-    let forearmRightTransformation = matMul(this.forearmRightMatrix,rotX(20));
-    forearmRightTransformation = matMul(translation(0,-this.armLength/2,this.armLength/2), forearmRightTransformation);
-    forearmRightTransformation = matMul(armRightTransformation, forearmRightTransformation);
+        // Right arm (raised)
+        let armRightTransformation = this.armRightMatrix
+        armRightTransformation = matMul(chestMatrix, armRightTransformation);
 
-    let handRightTransformation = matMul(forearmRightTransformation, this.handRightMatrix);
-
-    // Left arm (raised)
-    let armLeftTransformation = matMul(this.armLeftMatrix,rotZ(this.armLeftRotation.z));
-    armLeftTransformation = matMul(chestMatrix, armLeftTransformation);
-
-    let forearmLeftTransformation = matMul(this.forearmLeftMatrix,rotX(20));
-    forearmLeftTransformation = matMul(translation(0,-this.armLength/2,this.armLength/2), forearmLeftTransformation);
-    forearmLeftTransformation = matMul(armLeftTransformation, forearmLeftTransformation);
-
-    let handLeftTransformation = matMul(forearmLeftTransformation, this.handLeftMatrix);
-
-    // Left leg (curled back)
-    let legLeftTransformation = matMul(this.legLeftMatrix, rotX(180));
-    legLeftTransformation = matMul(translation(0,this.spineLength/2,-this.spineLength/2), legLeftTransformation);
-    legLeftTransformation = matMul(spineMatrix, legLeftTransformation);
-    
-
-    let shinLeftTransformation = matMul (this.shinLeftMatrix, rotX(-30));
-    shinLeftTransformation = matMul(translation(0,-this.legLength/2,this.legLength/2), shinLeftTransformation);
-    shinLeftTransformation = matMul(legLeftTransformation, shinLeftTransformation);
-
-
-    let footLeftTransformation = matMul(shinLeftTransformation, this.footLeftMatrix);
-
-    // Right leg (curled back)
-    let legRightTransformation = matMul(this.legRightMatrix, rotX(180));
-    legRightTransformation = matMul(translation(0,this.spineLength/2,-this.spineLength/2), legRightTransformation);
-    legRightTransformation = matMul(spineMatrix, legRightTransformation);
-    
-
-    let shinRightTransformation = matMul (this.shinRightMatrix, rotX(-30));
-    shinRightTransformation = matMul(translation(0,-this.legLength/2,this.legLength/2), shinRightTransformation);
-    shinRightTransformation = matMul(legRightTransformation, shinRightTransformation);
-
-
-    let footRightTransformation = matMul(shinRightTransformation, this.footRightMatrix);
-
-    // Apply changes
-
-    this.spine.setMatrix(spineMatrix);
-    this.chest.setMatrix(chestMatrix);
-    this.neck.setMatrix(neckMatrix);
-    this.head.setMatrix(headMatrix);
-
-    this.armRight.setMatrix(armRightTransformation);
-    this.forearmRight.setMatrix(forearmRightTransformation);
-    this.handRight.setMatrix(handRightTransformation);
-
-    this.armLeft.setMatrix(armLeftTransformation);
-    this.forearmLeft.setMatrix(forearmLeftTransformation);
-    this.handLeft.setMatrix(handLeftTransformation);
-
-    this.legLeft.setMatrix(legLeftTransformation);
-    this.shinLeft.setMatrix(shinLeftTransformation);
-    this.footLeft.setMatrix(footLeftTransformation);
-
-    this.legRight.setMatrix(legRightTransformation);
-    this.shinRight.setMatrix(shinRightTransformation);
-    this.footRight.setMatrix(footRightTransformation);
-}
-	pose2(){
-		// TODO DEFINIR LA DEUXIEME POSE ICI
-
-        // Spine
-        let spineTransformation = matMul(translation(0,-(this.shinLength+this.footDepth/2),0), this.spineMatrix);
-        // Chest
-        let chestTransformation = matMul(spineTransformation, this.chestMatrix);
-        // Neck
-        let neckTransformation = matMul(chestTransformation, this.neckMatrix);
-        // Head
-        let headTransformation = matMul(neckTransformation, this.headMatrix);
-
-        // Right arm 
-        let armRightTransformation = matMul(this.armRightMatrix,rotZ(-3));
-        armRightTransformation = matMul(translation(this.chestLength/2,-this.chestLength/2,0), armRightTransformation);
-        armRightTransformation = matMul(chestTransformation, armRightTransformation);
-
-        let forearmRightTransformation = matMul(this.forearmRightMatrix,rotX(20));
-        forearmRightTransformation = matMul(translation(0,-this.armLength/2,this.armLength/2), forearmRightTransformation);
+        let forearmRightTransformation = matMul(this.forearmRightMatrix,translation(0,-this.forearmLength/2,0));
+        forearmRightTransformation = matMul(forearmRightTransformation, rotX(20));
+        forearmRightTransformation = matMul(forearmRightTransformation,translation(0,this.forearmLength/2,0));
         forearmRightTransformation = matMul(armRightTransformation, forearmRightTransformation);
 
         let handRightTransformation = matMul(forearmRightTransformation, this.handRightMatrix);
 
-        // Left arm 
-        let armLeftTransformation = matMul(this.armLeftMatrix,rotZ(3));
-        armLeftTransformation = matMul(translation(-this.chestLength/2,-this.chestLength/2,0), armLeftTransformation);
-        armLeftTransformation = matMul(chestTransformation, armLeftTransformation);
+        // Left arm (raised)
+        let armLeftTransformation = this.armLeftMatrix
+        armLeftTransformation = matMul(chestMatrix, armLeftTransformation);
 
-        let forearmLeftTransformation = matMul(this.forearmLeftMatrix,rotX(20));
-        forearmLeftTransformation = matMul(translation(0,-this.armLength/2,this.armLength/2), forearmLeftTransformation);
+        let forearmLeftTransformation = matMul(this.forearmLeftMatrix,translation(0,-this.forearmLength/2,0));
+        forearmLeftTransformation = matMul(forearmLeftTransformation, rotX(20));
+        forearmLeftTransformation = matMul(forearmLeftTransformation,translation(0,this.forearmLength/2,0));
         forearmLeftTransformation = matMul(armLeftTransformation, forearmLeftTransformation);
 
         let handLeftTransformation = matMul(forearmLeftTransformation, this.handLeftMatrix);
 
         // Left leg (curled back)
-        let legLeftTransformation = matMul(this.legLeftMatrix, rotZ(this.legLeftRotation.z));
-        legLeftTransformation = matMul(legLeftTransformation,rotY(110));
-        legLeftTransformation = matMul(translation(0,this.legLength/2-this.spineLength,0), legLeftTransformation);
+        let legLeftTransformation = matMul(this.legLeftMatrix,translation(0,-this.legLength/2,0));
+        legLeftTransformation = matMul(legLeftTransformation, rotX(200));
+        legLeftTransformation = matMul(legLeftTransformation, translation(0,this.legLength/2,0));
+        legLeftTransformation = matMul(spineMatrix, legLeftTransformation);
+
+        let shinLeftTransformation = matMul(this.shinLeftMatrix,translation(0,-this.shinLength/2,0));
+        shinLeftTransformation = matMul(shinLeftTransformation, rotX(50));
+        shinLeftTransformation = matMul(shinLeftTransformation, translation(0,this.shinLength/2,0));
+        shinLeftTransformation = matMul(legLeftTransformation, shinLeftTransformation);
+
+
+        let footLeftTransformation = matMul(shinLeftTransformation, this.footLeftMatrix);
+
+        // Right leg (curled back)
+        let legRightTransformation = matMul(this.legRightMatrix,translation(0,-this.legLength/2,0));
+        legRightTransformation = matMul(legRightTransformation, rotX(200));
+        legRightTransformation = matMul(legRightTransformation, translation(0,this.legLength/2,0));
+        legRightTransformation = matMul(spineMatrix, legRightTransformation);
+
+        let shinRightTransformation = matMul(this.shinRightMatrix,translation(0,-this.shinLength/2,0));
+        shinRightTransformation = matMul(shinRightTransformation, rotX(50));
+        shinRightTransformation = matMul(shinRightTransformation, translation(0,this.shinLength/2,0));
+        shinRightTransformation = matMul(legRightTransformation, shinRightTransformation);
+
+
+        let footRightTransformation = matMul(shinRightTransformation, this.footRightMatrix);
+
+        
+        this.spine.setMatrix(spineMatrix);
+        this.chest.setMatrix(chestMatrix);
+        this.neck.setMatrix(neckMatrix);
+        this.head.setMatrix(headMatrix);
+
+        this.armRight.setMatrix(armRightTransformation);
+        this.forearmRight.setMatrix(forearmRightTransformation);
+        this.handRight.setMatrix(handRightTransformation);
+
+        this.armLeft.setMatrix(armLeftTransformation);
+        this.forearmLeft.setMatrix(forearmLeftTransformation);
+        this.handLeft.setMatrix(handLeftTransformation);
+
+        this.legLeft.setMatrix(legLeftTransformation);
+        this.shinLeft.setMatrix(shinLeftTransformation);
+        this.footLeft.setMatrix(footLeftTransformation);
+
+        this.legRight.setMatrix(legRightTransformation);
+        this.shinRight.setMatrix(shinRightTransformation);
+        this.footRight.setMatrix(footRightTransformation);
+
+        boneDict["Spine"].setMatrix(matMul(matMul(this.spine.matrix, translation(0,-this.spineLength/2,0)), inverseOf(boneDict["Spine"].matrixWorld)));
+        boneDict["Chest"].setMatrix(matMul(matMul(this.chest.matrix, translation(0,-this.chestLength/2,0)), inverseOf(boneDict["Chest"].matrixWorld))); 
+        boneDict["Neck"].setMatrix(matMul(matMul(this.neck.matrix,translation(0, -this.neckLength/2,0)), inverseOf(boneDict["Neck"].matrixWorld))); 
+        boneDict["Head"].setMatrix(matMul(matMul(this.head.matrix, translation(0,-this.headLength/2,0)), inverseOf(boneDict["Head"].matrixWorld))); 
+        boneDict["Arm_R"].setMatrix(matMul(matMul(this.armRight.matrix, translation(0,-this.armLength/2,0)), inverseOf( boneDict["Arm_R"].matrixWorld))); 
+        boneDict["Forearm_R"].setMatrix(matMul(matMul(this.forearmRight.matrix, translation(0,-this.forearmLength/2,0)), inverseOf( boneDict["Forearm_R"].matrixWorld))); 
+        boneDict["Arm_L"].setMatrix(matMul(matMul(this.armLeft.matrix, translation(0,-this.armLength/2,0)), inverseOf( boneDict["Arm_L"].matrixWorld)));    
+        boneDict["Forearm_L"].setMatrix(matMul(matMul(this.forearmLeft.matrix, translation(0,-this.forearmLength/2,0)), inverseOf( boneDict["Forearm_L"].matrixWorld))); 
+        boneDict["Leg_R"].setMatrix(matMul(matMul(this.legRight.matrix, translation(0,-this.legLength/2,0)),inverseOf( boneDict["Leg_R"].matrixWorld ))); 
+        boneDict["Shin_R"].setMatrix(matMul(matMul(this.shinRight.matrix, translation(0,-this.shinLength/2,0)),inverseOf( boneDict["Shin_R"].matrixWorld))); 
+        boneDict["Leg_L"].setMatrix(matMul(matMul(this.legLeft.matrix, translation(0,-this.legLength/2,0)),inverseOf( boneDict["Leg_L"].matrixWorld)));
+        boneDict["Shin_L"].setMatrix(matMul(matMul(this.shinLeft.matrix, translation(0,-this.shinLength/2,0)), inverseOf(boneDict["Shin_L"].matrixWorld))); // Update bone dict for skinning
+
+        buildShaderBoneMatrix();
+    }
+
+	pose2(){
+		// TODO DEFINIR LA DEUXIEME POSE ICI
+
+        // Spine, chest, neck, head
+        let spineTransformation = matMul(translation(0,-(this.legLength/2+this.shinLength/2),0), this.spineMatrix);
+        let chestTransformation = matMul(spineTransformation, this.chestMatrix);
+        let neckTransformation = matMul(chestTransformation, this.neckMatrix);
+        let headTransformation = matMul(neckTransformation, this.headMatrix);
+
+        // Right arm (bent down)
+        let armRightTransformation = matMul(this.armRightMatrix,translation(0,-this.armLength/2,0));
+        armRightTransformation = matMul(armRightTransformation, rotZ(70));
+        armRightTransformation = matMul(armRightTransformation, translation(0,this.armLength/2,0));
+        armRightTransformation = matMul(chestTransformation, armRightTransformation);
+
+        let forearmRightTransformation = matMul(this.forearmRightMatrix,translation(0,-this.forearmLength/2,0));
+        forearmRightTransformation = matMul(forearmRightTransformation, rotX(20));
+        forearmRightTransformation = matMul(forearmRightTransformation,translation(0,this.forearmLength/2,0));
+        forearmRightTransformation = matMul(armRightTransformation, forearmRightTransformation);
+
+        let handRightTransformation = matMul(forearmRightTransformation, this.handRightMatrix);
+
+        // Left arm (bent down)
+        let armLeftTransformation = matMul(this.armLeftMatrix,translation(0,-this.armLength/2,0));
+        armLeftTransformation = matMul(armLeftTransformation, rotZ(-70));
+        armLeftTransformation = matMul(armLeftTransformation, translation(0,this.armLength/2,0));
+        armLeftTransformation = matMul(chestTransformation, armLeftTransformation);
+
+        let forearmLeftTransformation = matMul(this.forearmLeftMatrix,translation(0,-this.forearmLength/2,0));
+        forearmLeftTransformation = matMul(forearmLeftTransformation, rotX(20));
+        forearmLeftTransformation = matMul(forearmLeftTransformation,translation(0,this.forearmLength/2,0));
+        forearmLeftTransformation = matMul(armLeftTransformation, forearmLeftTransformation);
+
+        let handLeftTransformation = matMul(forearmLeftTransformation, this.handLeftMatrix);
+
+        // Left leg (on knee)
+        let legLeftTransformation = this.legLeftMatrix;
         legLeftTransformation = matMul(spineTransformation, legLeftTransformation);
         
 
-        let shinLeftTransformation = matMul (this.shinLeftMatrix, rotX(-30));
-        shinLeftTransformation = matMul(translation(0,-this.legLength/2,this.legLength/2), shinLeftTransformation);
+        let shinLeftTransformation = matMul (this.shinLeftMatrix, translation(0,-this.shinLength/2,0));
+        shinLeftTransformation = matMul(shinLeftTransformation, rotX(30));
+        shinLeftTransformation = matMul(shinLeftTransformation, translation(0,this.shinLength/2,0));
         shinLeftTransformation = matMul(legLeftTransformation, shinLeftTransformation);
 
         let footLeftTransformation = matMul(shinLeftTransformation, this.footLeftMatrix);
 
-        // // Right leg (curled back)
-        let legRightTransformation = matMul(this.legRightMatrix, rotZ(this.legRightRotation.z));
-        legRightTransformation = matMul(legRightTransformation,rotY(110));
-        legRightTransformation = matMul(translation(0,this.legLength/2-this.spineLength,0), legRightTransformation);
+        // // Right leg (on knee)
+        let legRightTransformation = this.legRightMatrix;
         legRightTransformation = matMul(spineTransformation, legRightTransformation);
         
 
-        let shinRightTransformation = matMul (this.shinRightMatrix, rotX(-30));
-        shinRightTransformation = matMul(translation(0,-this.legLength/2,this.legLength/2), shinRightTransformation);
+        let shinRightTransformation = matMul (this.shinRightMatrix, translation(0,-this.shinLength/2,0));
+        shinRightTransformation = matMul(shinRightTransformation, rotX(30));
+        shinRightTransformation = matMul(shinRightTransformation, translation(0,this.shinLength/2,0));
         shinRightTransformation = matMul(legRightTransformation, shinRightTransformation);
 
         let footRightTransformation = matMul(shinRightTransformation, this.footRightMatrix);
@@ -691,6 +772,22 @@ this.spineLength = 0.65305 ;
         this.legRight.setMatrix(legRightTransformation);
         this.shinRight.setMatrix(shinRightTransformation);
         this.footRight.setMatrix(footRightTransformation);
+
+        boneDict["Spine"].setMatrix(matMul(matMul(this.spine.matrix, translation(0,-this.spineLength/2,0)), inverseOf(boneDict["Spine"].matrixWorld)));
+        boneDict["Chest"].setMatrix(matMul(matMul(this.chest.matrix, translation(0,-this.chestLength/2,0)), inverseOf(boneDict["Chest"].matrixWorld))); 
+        boneDict["Neck"].setMatrix(matMul(matMul(this.neck.matrix,translation(0, -this.neckLength/2,0)), inverseOf(boneDict["Neck"].matrixWorld))); 
+        boneDict["Head"].setMatrix(matMul(matMul(this.head.matrix, translation(0,-this.headLength/2,0)), inverseOf(boneDict["Head"].matrixWorld))); 
+        boneDict["Arm_R"].setMatrix(matMul(matMul(this.armRight.matrix, translation(0,-this.armLength/2,0)), inverseOf( boneDict["Arm_R"].matrixWorld))); 
+        boneDict["Forearm_R"].setMatrix(matMul(matMul(this.forearmRight.matrix, translation(0,-this.forearmLength/2,0)), inverseOf( boneDict["Forearm_R"].matrixWorld))); 
+        boneDict["Arm_L"].setMatrix(matMul(matMul(this.armLeft.matrix, translation(0,-this.armLength/2,0)), inverseOf( boneDict["Arm_L"].matrixWorld)));    
+        boneDict["Forearm_L"].setMatrix(matMul(matMul(this.forearmLeft.matrix, translation(0,-this.forearmLength/2,0)), inverseOf( boneDict["Forearm_L"].matrixWorld))); 
+        boneDict["Leg_R"].setMatrix(matMul(matMul(this.legRight.matrix, translation(0,-this.legLength/2,0)),inverseOf( boneDict["Leg_R"].matrixWorld ))); 
+        boneDict["Shin_R"].setMatrix(matMul(matMul(this.shinRight.matrix, translation(0,-this.shinLength/2,0)),inverseOf( boneDict["Shin_R"].matrixWorld))); 
+        boneDict["Leg_L"].setMatrix(matMul(matMul(this.legLeft.matrix, translation(0,-this.legLength/2,0)),inverseOf( boneDict["Leg_L"].matrixWorld)));
+        boneDict["Shin_L"].setMatrix(matMul(matMul(this.shinLeft.matrix, translation(0,-this.shinLength/2,0)), inverseOf(boneDict["Shin_L"].matrixWorld))); // Update bone dict for skinning
+
+        buildShaderBoneMatrix();
+
 	}
 
     animate(t) {
@@ -711,35 +808,47 @@ this.spineLength = 0.65305 ;
         let armRightSwing = rotX(-sin(phase) * amplitudeArm);
 
         // Left arm
-        let armLeftTransformation = matMul(this.armLeftMatrix, rotZ(this.armLeftRotation.z));
-        armLeftTransformation = matMul(armLeftSwing, armLeftTransformation);
+        let armLeftTransformation = matMul(this.armLeftMatrix, translation(0,-this.armLength/2,0));
+        armLeftTransformation = matMul(armLeftTransformation, armLeftSwing);
+        armLeftTransformation = matMul(armLeftTransformation, translation(0,this.armLength/2,0));
         armLeftTransformation = matMul(chestMatrix, armLeftTransformation);
 
-        let forearmLeftTransformation = matMul(armLeftTransformation, this.forearmLeftMatrix);
+        let forearmLeftTransformation = matMul(this.forearmLeftMatrix, translation(0,-this.forearmLength/2,0));
+        forearmLeftTransformation = matMul(forearmLeftTransformation, rotX(20));
+        forearmLeftTransformation = matMul(forearmLeftTransformation, translation(0,this.forearmLength/2,0));
+        forearmLeftTransformation = matMul(armLeftTransformation, forearmLeftTransformation);
+
         let handLeftTransformation = matMul(forearmLeftTransformation, this.handLeftMatrix);
 
         // Right arm
-        let armRightTransformation = matMul(this.armRightMatrix, rotZ(this.armRightRotation.z));
-        armRightTransformation = matMul(armRightSwing, armRightTransformation);
+        let armRightTransformation = matMul(this.armRightMatrix, translation(0,-this.armLength/2,0));
+        armRightTransformation = matMul(armRightTransformation, armRightSwing);
+        armRightTransformation = matMul(armRightTransformation, translation(0,this.armLength/2,0));
         armRightTransformation = matMul(chestMatrix, armRightTransformation);
 
-        let forearmRightTransformation = matMul(armRightTransformation, this.forearmRightMatrix);
+        let forearmRightTransformation = matMul(this.forearmRightMatrix, translation(0,-this.forearmLength/2,0));
+        forearmRightTransformation = matMul(forearmRightTransformation, rotX(20));
+        forearmRightTransformation = matMul(forearmRightTransformation, translation(0,this.forearmLength/2,0));
+        forearmRightTransformation = matMul(armRightTransformation, forearmRightTransformation);
+
         let handRightTransformation = matMul(forearmRightTransformation, this.handRightMatrix);
 
         // Leg swing
-        let legLeftSwing = rotX(-Math.sin(phase) * amplitudeLeg);
-        let legRightSwing = rotX(Math.sin(phase) * amplitudeLeg);
+        let legLeftSwing = rotX(-sin(phase) * amplitudeLeg);
+        let legRightSwing = rotX(sin(phase) * amplitudeLeg);
 
         // Left leg
-        let legLeftTransformation = matMul(this.legLeftMatrix, rotZ(this.legLeftRotation.z));
+        let legLeftTransformation = matMul(this.legLeftMatrix, translation(0,-this.legLength/2,0));
         legLeftTransformation = matMul(legLeftTransformation, legLeftSwing);
+        legLeftTransformation = matMul(legLeftTransformation, translation(0,this.legLength/2,0));
         legLeftTransformation = matMul(spineMatrix, legLeftTransformation);
 
         let shinLeftTransformation = matMul(legLeftTransformation, this.shinLeftMatrix);
         let footLeftTransformation = matMul(shinLeftTransformation, this.footLeftMatrix);
 
-        let legRightTransformation = matMul(this.legRightMatrix, rotZ(this.legRightRotation.z));
+        let legRightTransformation = matMul(this.legRightMatrix, translation(0,-this.legLength/2,0));
         legRightTransformation = matMul(legRightTransformation, legRightSwing);
+        legRightTransformation = matMul(legRightTransformation, translation(0,this.legLength/2,0));
         legRightTransformation = matMul(spineMatrix, legRightTransformation);
 
         let shinRightTransformation = matMul(legRightTransformation, this.shinRightMatrix);
@@ -767,8 +876,24 @@ this.spineLength = 0.65305 ;
         this.legRight.setMatrix(legRightTransformation);
         this.shinRight.setMatrix(shinRightTransformation);
         this.footRight.setMatrix(footRightTransformation);
-    }
 
+        boneDict["Spine"].setMatrix(matMul(matMul(this.spine.matrix, translation(0,-this.spineLength/2,0)), inverseOf(boneDict["Spine"].matrixWorld)));
+        boneDict["Chest"].setMatrix(matMul(matMul(this.chest.matrix, translation(0,-this.chestLength/2,0)), inverseOf(boneDict["Chest"].matrixWorld))); 
+        boneDict["Neck"].setMatrix(matMul(matMul(this.neck.matrix,translation(0, -this.neckLength/2,0)), inverseOf(boneDict["Neck"].matrixWorld))); 
+        boneDict["Head"].setMatrix(matMul(matMul(this.head.matrix, translation(0,-this.headLength/2,0)), inverseOf(boneDict["Head"].matrixWorld))); 
+        boneDict["Arm_R"].setMatrix(matMul(matMul(this.armRight.matrix, translation(0,-this.armLength/2,0)), inverseOf( boneDict["Arm_R"].matrixWorld))); 
+        boneDict["Forearm_R"].setMatrix(matMul(matMul(this.forearmRight.matrix, translation(0,-this.forearmLength/2,0)), inverseOf( boneDict["Forearm_R"].matrixWorld))); 
+        boneDict["Arm_L"].setMatrix(matMul(matMul(this.armLeft.matrix, translation(0,-this.armLength/2,0)), inverseOf( boneDict["Arm_L"].matrixWorld)));    
+        boneDict["Forearm_L"].setMatrix(matMul(matMul(this.forearmLeft.matrix, translation(0,-this.forearmLength/2,0)), inverseOf( boneDict["Forearm_L"].matrixWorld))); 
+        boneDict["Leg_R"].setMatrix(matMul(matMul(this.legRight.matrix, translation(0,-this.legLength/2,0)),inverseOf( boneDict["Leg_R"].matrixWorld ))); 
+        boneDict["Shin_R"].setMatrix(matMul(matMul(this.shinRight.matrix, translation(0,-this.shinLength/2,0)),inverseOf( boneDict["Shin_R"].matrixWorld))); 
+        boneDict["Leg_L"].setMatrix(matMul(matMul(this.legLeft.matrix, translation(0,-this.legLength/2,0)),inverseOf( boneDict["Leg_L"].matrixWorld)));
+        boneDict["Shin_L"].setMatrix(matMul(matMul(this.shinLeft.matrix, translation(0,-this.shinLength/2,0)), inverseOf(boneDict["Shin_L"].matrixWorld))); // Update bone dict for skinning
+
+        buildShaderBoneMatrix();
+
+        
+    }
 }
 
 var keyboard = new THREEx.KeyboardState();
@@ -841,7 +966,6 @@ function init() {
         humanMesh = new THREE.Mesh(humanGeometry, humanMaterial);
         robot = new Robot(humanMesh);
         robot.hideHuman();
-
     });
 
     //
@@ -1087,6 +1211,10 @@ function scale(x, y, z) {
     );
 }
 
+function inverseOf(M) {
+    return new THREE.Matrix4().copy(M).invert();
+}
+
 function cos(angle) {
     return Math.cos(angle);
 }
@@ -1111,7 +1239,6 @@ function updateBody() {
         robot.animate(t);
         break;
 
-        // add poses here:
     case 1:
         robot.pose1();
         break;
